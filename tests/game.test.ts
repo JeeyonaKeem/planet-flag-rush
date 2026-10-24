@@ -1,6 +1,26 @@
-import{test}from'node:test';import assert from'node:assert/strict';import{Game}from'../server/engine.js';import{C,dot,move,distance,rounds}from'../shared/game.js';
+import{test}from'node:test';import assert from'node:assert/strict';import{Game}from'../server/engine.js';import{C,dot,move,distance,rounds,speedMultiplierForRound}from'../shared/game.js';
 test('continuous spherical motion: constant speed and tangent over many laps',()=>{const g=new Game('test','a'),p=g.add('a','A');for(let i=0;i<30000;i++){const before=[...p.n] as typeof p.n;p.input=Math.sin(i*.01);move(p,1/30);assert.ok(Math.abs(Math.hypot(...p.n)-1)<1e-10);assert.ok(Math.abs(dot(p.n,p.f))<1e-10);assert.ok(Math.abs(distance(before,p.n)-.4)<1e-7);}});
 test('only one claimant, wrong colors ignored and client score never used',()=>{const g=new Game('test','a'),a=g.add('a','A'),b=g.add('b','B');g.start(0);g.state.flags=[{id:100,n:[0,1,0],color:g.state.target,value:1,special:false}];a.n=b.n=[0,1,0];a.f=b.f=[1,0,0];g.tick(10,0);assert.equal(a.score+b.score,1);assert.equal(g.state.flags.length,0);g.state.flags=[{id:101,n:a.n,color:(g.state.target+1)%5,value:1,special:false}];g.tick(20,0);assert.equal(a.score+b.score,1);});
 test('12 rounds: nine normal, two fever, one special; expiration and scores',()=>{const g=new Game('test','a');g.add('a','A');g.add('b','B');g.start(1000);let total=0;for(let i=0;i<12;i++){assert.equal(g.state.round,i);const duration=g.state.mode==='normal'?30000:20000;total+=duration;if(g.state.mode==='special'){assert.equal(g.state.flags.filter(f=>f.special).length,7);const f=g.state.flags.find(f=>f.special)!;g.state.players[0].n=f.n;g.tick(g.state.ends-1,0);assert.equal(g.state.players[0].score,5);}if(g.state.mode==='fever')assert.ok(g.state.flags.filter(f=>f.color===g.state.target).every(f=>[2,3].includes(f.value)));g.tick(g.state.ends,0);}assert.equal(total,330000);assert.equal(g.state.phase,'results');assert.equal(g.state.flags.some(f=>f.special),false);assert.equal(rounds.filter(x=>x==='normal').length,9);});
 test('fast play: many target flags available from first round and replenished',()=>{const g=new Game('test','a');g.add('a','A');g.add('b','B');g.start(1000);assert.equal(g.state.target,1);assert.ok(g.state.flags.filter(f=>f.color===1).length>=12);const original=g.state.flags.find(f=>f.color===1)!;g.state.players[0].n=original.n;g.tick(1001,0);assert.ok(g.state.players[0].score>=1);g.nextSpawn=0;g.tick(2000,0);assert.ok(g.state.flags.filter(f=>f.color===1).length>=12);});
 test('speed and safe spawn spacing',()=>{const g=new Game('test','a');const p=g.add('a','A');const n=[...p.n] as typeof p.n;move(p,1);assert.ok(Math.abs(distance(n,p.n)-C.speed)<1e-6);g.start(0);for(const f of g.state.flags)assert.ok(distance(f.n,p.n)>=C.minSpawnDistance);});
+
+test('turbo pace begins at round 8 and increases for final 2 rounds',()=>{
+ assert.equal(speedMultiplierForRound(6),1);
+ assert.equal(speedMultiplierForRound(7),1.3);
+ assert.equal(speedMultiplierForRound(9),1.3);
+ assert.equal(speedMultiplierForRound(10),1.45);
+ const g=new Game('test','a');const p=g.add('a','A');g.add('b','B');g.start(0);
+ let before=[...p.n] as typeof p.n;
+ g.tick(1,1/30);assert.ok(Math.abs(distance(before,p.n)-C.speed/30)<1e-6);
+ for(let i=1;i<=7;i++)g.tick(g.state.ends,0);
+ assert.equal(g.state.round,7);
+ before=[...p.n] as typeof p.n;
+ g.tick(g.state.ends-1000,1/30);
+ assert.ok(Math.abs(distance(before,p.n)-C.speed*1.3/30)<1e-6);
+ for(let i=8;i<=10;i++)g.tick(g.state.ends,0);
+ assert.equal(g.state.round,10);
+ before=[...p.n] as typeof p.n;
+ g.tick(g.state.ends-1000,1/30);
+ assert.ok(Math.abs(distance(before,p.n)-C.speed*1.45/30)<1e-6);
+});

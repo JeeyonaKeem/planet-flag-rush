@@ -8,7 +8,8 @@ export const mul=(a:V,n:number):V=>a.map(x=>x*n) as V;
 export const norm=(a:V):V=>mul(a,1/(Math.hypot(...a)||1));
 export const cross=(a:V,b:V):V=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
 export const distance=(a:V,b:V)=>Math.acos(Math.max(-1,Math.min(1,dot(a,b))))*C.radius;
-export function move(p:Player,dt:number){const a=-p.input*C.turn*dt; p.f=norm(add(mul(p.f,Math.cos(a)),mul(cross(p.n,p.f),Math.sin(a))));const t=C.speed*dt/C.radius,old=p.n;p.n=norm(add(mul(old,Math.cos(t)),mul(p.f,Math.sin(t))));p.f=norm(add(mul(p.f,Math.cos(t)),mul(old,-Math.sin(t))));}
+export const speedMultiplierForRound=(round:number)=>round>=10?1.45:round>=7?1.30:1;
+export function move(p:Player,dt:number,speed=C.speed){const a=-p.input*C.turn*dt; p.f=norm(add(mul(p.f,Math.cos(a)),mul(cross(p.n,p.f),Math.sin(a))));const t=speed*dt/C.radius,old=p.n;p.n=norm(add(mul(old,Math.cos(t)),mul(p.f,Math.sin(t))));p.f=norm(add(mul(p.f,Math.cos(t)),mul(old,-Math.sin(t))));}
 export interface Player{id:string;name:string;n:V;f:V;score:number;input:number;connected:boolean;avatar:number}
 export interface Flag{id:number;n:V;color:number;value:number;special:boolean}
 export type Mode='normal'|'fever'|'special';

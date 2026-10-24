@@ -1,4 +1,4 @@
-import {C,Player,Flag,State,V,norm,distance,move,rounds,cross} from '../shared/game.js';
+import {C,Player,Flag,State,V,norm,distance,move,rounds,cross,speedMultiplierForRound} from '../shared/game.js';
 export class Game {
  state:State; history:number[]=[]; nextSpawn=0; serial=0; lastActive=Date.now(); events:{player:string;value:number;n:V;id:number}[]=[];
  constructor(code:string,host:string){this.state={code,host,phase:'lobby',players:[],flags:[],round:0,mode:'normal',target:0,ends:0,now:0};}
@@ -26,7 +26,7 @@ export class Game {
  if(s.mode==='special'){for(let j=0;j<7;j++)this.spawnAhead(-1,true);}else this.refill();
  this.nextSpawn=now+this.interval();}
  interval(){const n=this.history.length;return (n<4?600:n<8?470:n<12?350:250)/(this.state.mode==='fever'?1.4:1);}
- tick(now:number,dt:number){const s=this.state;s.now=now;this.events=[];if(s.phase!=='playing')return;if(now>=s.ends)this.advance(now);if(s.phase!=='playing')return;this.history=this.history.filter(t=>now-t<30000);for(const p of s.players)move(p,dt);
+ tick(now:number,dt:number){const s=this.state;s.now=now;this.events=[];if(s.phase!=='playing')return;if(now>=s.ends)this.advance(now);if(s.phase!=='playing')return;this.history=this.history.filter(t=>now-t<30000);for(const p of s.players)move(p,dt,C.speed*speedMultiplierForRound(s.round));
  // Resolve each flag once. Shuffle exact ties to avoid permanent join-order advantage.
  for(const f of [...s.flags]){if(s.mode==='special'?!f.special:f.special||f.color!==s.target)continue;const hits=s.players.filter(p=>p.connected&&distance(p.n,f.n)<C.pickup).map(p=>({p,tie:Math.random()})).sort((a,b)=>distance(a.p.n,f.n)-distance(b.p.n,f.n)||a.tie-b.tie).map(x=>x.p);if(hits.length){const p=hits[0];p.score+=f.value;s.flags.splice(s.flags.indexOf(f),1);this.history.push(now);this.events.push({player:p.id,value:f.value,n:f.n,id:f.id});this.nextSpawn=Math.min(this.nextSpawn,now+this.interval());}}
  if(s.mode!=='special'&&now>=this.nextSpawn){this.refill();this.nextSpawn=now+this.interval();}
