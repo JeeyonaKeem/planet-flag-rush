@@ -1,4 +1,4 @@
-export const C={radius:40,speed:6,turn:150*Math.PI/180,tick:30,snapshot:15,maxPlayers:6,cap:20,pickup:1.8,minSpawnDistance:9,flagSeparation:5,viewDistance:27,reconnectMs:30000};
+export const C={radius:40,speed:12,turn:190*Math.PI/180,tick:30,snapshot:15,maxPlayers:6,cap:48,pickup:2.7,minSpawnDistance:5,flagSeparation:2.8,viewDistance:46,reconnectMs:30000};
 export const colors=['#ff5c68','#479aff','#ffdf58','#45df98','#b98aff'];
 export const names=['빨강','파랑','노랑','초록','보라'];
 export type V=[number,number,number];
